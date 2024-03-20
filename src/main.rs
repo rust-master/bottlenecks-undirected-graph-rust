@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
-use std::io;
+use std::io::BufReader;
+use std::io::{self, BufRead};
 
 type Graph = HashMap<usize, Vec<(usize, usize)>>;
 
@@ -88,22 +89,50 @@ fn find_bottlenecks(
 
 fn main() {
     println!("Enter tuples in the form [(a, b, c), (d, e, f), ...]:");
+
+    let stdin = io::stdin();
+    let lines = stdin.lock().lines();
+
     let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+    let mut start: usize = 0;
+    let mut end: usize = 0;
+
+    let mut i = 0;
+    for line_result in
+        lines.take_while(|line_result| line_result.as_ref().map_or(false, |line| !line.is_empty()))
+    {
+        if let Ok(line) = line_result {
+            if i == 0 {
+                input = line.clone();
+            } else if i == 1 {
+                let parsed_int: Result<usize, _> = line.parse().clone();
+                match parsed_int {
+                    Ok(num) => {
+                        start = num;
+                    }
+                    Err(_) => println!("Failed to parse integer"),
+                }
+            } else if i == 2 {
+                let parsed_int: Result<usize, _> = line.parse().clone();
+                match parsed_int {
+                    Ok(num) => {
+                        end = num;
+                    }
+                    Err(_) => println!("Failed to parse integer"),
+                }
+            }
+
+            i = i + 1;
+            println!("\ninput: {}", line);
+        } else {
+            break;
+        }
+    }
 
     let start_index = input.find('[').expect("Square brackets not found");
     let end_index = input.rfind(']').expect("Square brackets not found");
 
     let data_str = &input[start_index..=end_index];
-
-    let start = input[end_index + 3..=end_index + 3]
-        .parse::<usize>()
-        .unwrap();
-    let end = input[end_index + 6..=end_index + 6]
-        .parse::<usize>()
-        .unwrap();
 
     let mut data: Vec<(usize, usize, usize)> = Vec::new();
 
@@ -130,5 +159,16 @@ fn main() {
         }
     }
 
-    println!("{:?}", find_bottlenecks(&data[..], start, end));
+    println!("data {:?}", data);
+
+    let result = find_bottlenecks(&data[..], start, end);
+
+    let mut output = String::new();
+
+    for (idx, val) in result.iter().enumerate() {
+        let formatted = format!("({}, {}, {})", val.0, val.1, val.2);
+        output.push_str(&formatted);
+    }
+
+    println!("{}", output);
 }
